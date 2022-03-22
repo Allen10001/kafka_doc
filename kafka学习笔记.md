@@ -100,7 +100,7 @@
 >
 >### 事务协调器和事务日志
 >
->![image-20210119111857021](/Users/allen/big_data_learning/kafka/kafka学习笔记.assets/image-20210119111857021.png)
+>![image-20210119111857021](./kafka学习笔记.assets/image-20210119111857021.png)
 >
 >Kafka 0.11.0中与事务API一起引入的组件是上图右侧的事务Coordinator和事务日志。
 >
@@ -345,7 +345,7 @@ org.apache.kafka.clients.producer.KafkaProducer#sendOffsetsToTransaction(java.ut
 
 ### 分区复制
 
-![image-20201221164212163](/Users/allen/big_data_learning/kafka/kafka学习笔记.assets/image-20201221164212163.png)
+![image-20201221164212163](./kafka学习笔记.assets/image-20201221164212163.png)
 
 #### [Kafka的复制机制](https://colobu.com/2017/11/02/kafka-replication/)
 
@@ -404,7 +404,7 @@ org.apache.kafka.clients.producer.KafkaProducer#sendOffsetsToTransaction(java.ut
 >
 >**leader还会维护 high watermark  (HW，这个词语也不打算翻译，会变味)，是指分区中最后一次提交消息的offset（ISR中所有的副本都已经同步了leader中HW之前的消息）。HW会不断传播给follower副本，定期检查每个broker的磁盘并恢复。**
 >
->![image-20201221141236713](/Users/allen/big_data_learning/kafka/kafka学习笔记.assets/image-20201221141236713.png)
+>![image-20201221141236713](./kafka学习笔记.assets/image-20201221141236713.png)
 >
 >
 >
@@ -593,12 +593,12 @@ https://www.orchome.com/451
 >
 >还是拿几张图来说明吧，首先是加入组的过程:
 >
->![image-20200617213709848](/Users/allen/big_data_learning/kafka/kafka_img/image-20200617213709848.png)
+>![image-20200617213709848](./kafka_img/image-20200617213709848.png)
 >
 >值得注意的是， 在coordinator收集到所有成员请求前，它会把已收到请求放入一个叫purgatory(炼狱)的地方。记得国内有篇文章以此来证明kafka开发人员都是很有文艺范的，写得也是比较有趣，有兴趣可以去搜搜。
 >然后是分发分配方案的过程，即SyncGroup请求：
 >
->![image-20200617213803830](/Users/allen/big_data_learning/kafka/kafka_img/image-20200617213803830.png)
+>![image-20200617213803830](./kafka_img/image-20200617213803830.png)
 >
 >注意！！ consumer group的分区分配方案是在客户端执行的！Kafka将这个权利下放给客户端主要是因为这样做可以有更好的灵活性。比如这种机制下我可以实现类似于Hadoop那样的机架感知(rack-aware)分配方案，即为 consumer 挑选同一个机架下的分区数据，减少网络传输的开销。Kafka默认为你提供了两种分配策略：range和round-robin。由于这不是本文的重点，这里就不再详细展开了，你只需要记住你可以覆盖consumer的参数：partition.assignment.strategy来实现自己分配策略就好了。
 
@@ -794,6 +794,231 @@ bash ./bin/kafka-server-start.sh config/server.properties &
 >
 >在kafka0.10.1之后的版本中，将session.timeout.ms 和 max.poll.interval.ms 解耦了。也就是说：new KafkaConsumer对象后，在while true循环中执行consumer.poll拉取消息这个过程中，其实背后是有**2个线程**的，即一个kafka consumer实例包含2个线程：一个是heartbeat 线程，另一个是processing线程，processing线程可理解为调用consumer.poll方法执行消息处理逻辑的线程，而heartbeat线程是一个后台线程，对程序员是"隐藏不见"的。如果消息处理逻辑很复杂，比如说需要处理5min，那么 max.poll.interval.ms可设置成比5min大一点的值。而heartbeat 线程则和上面提到的参数 heartbeat.interval.ms有关，heartbeat线程 每隔heartbeat.interval.ms向coordinator发送一个心跳包，证明自己还活着。只要 heartbeat线程 在 session.timeout.ms 时间内 向 coordinator发送过心跳包，那么 group coordinator就认为当前的kafka consumer是活着的。
 
+## 从**Apache Kafka** 重温文件高效读写  （这篇文章不是很懂？）
+
+https://blog.csdn.net/yjh314/article/details/78855193
+
+
+
+* [Kafka: 用于日志处理的分布式消息系统](https://zhuanlan.zhihu.com/p/97704127)
+
+>为了避免日志损坏，Kafka将每个消息的CRC存储在日志中。如果代理上存在任何I / O错误，Kafka将运行恢复过程以删除带有不一致CRC的消息。在消息级别使用CRC还可以使我们在产生或使用消息之后检查网络错误。
+>
+>Kafka保证将来自单个分区的消息按顺序传递给消费者。但是，不能保证来自不同分区的消息的顺序。
+
+* [Kafka log的读写分析](http://www.daleizhou.tech/posts/log-fetch-produce.html)
+
+>为了对某个具体Topic的读写的负载均衡，Kafka的一个Topic可以分为多个Partition，不同的Partition可以分布在不同的broker，方便的实现水平拓展，减轻读写瓶颈。通过前面几篇博文的分析我们知道正常情况下Kafka保证一条消息只发送到一个分区，并且一个分区的一条消息只能由Group下的唯一一个Consumer消费，如果想重复消费则可以加入一个新的组。
+>
+>熟悉Kafka的同学都知道，Kafka的消息的读写都是存放在log文件中。一个broker的log文件放在一个目录下，而不同的Partition对应一个子目录，发送到broker上的消息将会顺序的append到对应的Partition对应的log文件中。每个Partition对应的log文件可以看成是无限长、可以在文件末尾进行append数据的文件，加速写入速度。实际实现中，每个Partition对应的日志文件又被切分成多个Segment，这种切分的设计可以在数据的清理，控制索引文件大小等方面带来优势。
+>
+>　　因为分布式环境下的任何一个Broker都有宕机的风险，所以Kafka上每个Partition有可以设置多个副本，通过副本的主从选举，副本的主从同步等手段，保证数据的高可用，降低由于部分broker宕机带来的影响，当然为了达到这个目的，同一个Partition副本应该分布在不同的Broker、机架上，通过一定的分配算法来使得分布尽量分散。
+>
+>**Segment** 　下面我们来看一下TopicPartition的示意图。
+>
+>![](kafka学习笔记.assets/Anatomy_of_a_topic.png)
+>
+>由上图我们可以看到，每个TopicPartition由一系列的Segment组成。这些Segment会在日志文件夹中有对应的日志文件、索引文件等。下面我们看某个Partition对应的log文件夹内容的示意文件列表:
+>
+>```shel
+>log git:(master) ✗ ls
+>00000000000000000000.index
+>00000000000000000000.log
+>00000000000000043023.index
+>00000000000000043023.log
+>00000000000000090023.index
+>00000000000000090023.log
+>```
+>
+>每个Segment都对应着base_offset.index,base_offset.log文件。这个base_offset代表这个Segment消息在整个消息中的基准偏移量，他会小于等于这个Segment中所有的消息的偏移，也严格大于前一个Segment中所有消息的偏移量。
+>
+>　　因为Kafka对数据的处理是抽象为在一个无限长的日志文件后进行追加操作。因此为了能迅速检索到某个指定offset对应的消息，Kafka对日志文件都进行了索引。每个日志的Segment相应地对应一个索引文件OffsetIndex。下面来看索引及消息在某个具体Segment的示意结构图:
+>
+>![](kafka学习笔记.assets/SegmentIndexAndLog.png)
+>
+>从图上看每个日志的segment对应一个index文件。index文件是稀疏的，即并不是每一个Record都会对应index文件里的一条，这样的设计可以有效的减小index文件的大小，使得可以载入内存，在内存中进行比较运算，虽然可能不能直接根据index直接找到某一个record,但是可以先通过二分的形式找到不大于要检索的offset的那个index记录，然后再往后顺序遍历即可找到。较新版本的Kafka还给每个Segment会配置TimeStampIndex，与OffsetIndex结构类似，区别是TimeStampIndex组成为8字节的时间戳和4字节的location。
+>
+>Index的格式为8个字节组成一条记录，其中前4个字节标识消息在该Segment中的相对offset,后4个字节标识该消息在该Segment中的相对位置。
+
+## [Kafka消费组(consumer group)](https://www.cnblogs.com/huxi2b/p/6223228.html)  
+
+该文章对 kafka 的消费者部分内容讲得很清晰、通俗易懂。
+
+>很多人在Kafka中国社区(替群主做个宣传，QQ号：162272557)提问时的开头经常是这样的：“我使用的kafka版本是2.10/2.11, 现在碰到一个奇怪的问题。。。。” 无意冒犯，但这里的2.10/2.11不是kafka的版本，而是编译kafka的Scala版本。Kafka的server端代码是由Scala语言编写的，目前Scala主流的3个版本分别是2.10、2.11和2.12。实际上Kafka现在每个PULL request都已经自动增加了这三个版本的检查。目前广泛使用kafka的版本应该是这三个大版本：0.8.x， 0.9.x和0.10.x。 这三个版本对于consumer和consumer group来说都有很大的变化，我们后面会详谈。
+>
+>**4.1 什么是rebalance？**
+>
+>rebalance 本质上是一种协议，规定了一个consumer group下的所有consumer如何达成一致来分配订阅topic的每个分区。比如某个group下有20个consumer，它订阅了一个具有100个分区的topic。正常情况下，Kafka平均会为每个consumer分配5个分区。这个分配的过程就叫rebalance。
+>
+>**4.2 什么时候rebalance？**
+>
+>这也是经常被提及的一个问题。rebalance的触发条件有三种：
+>
+>- 组成员发生变更(新consumer加入组、已有consumer主动离开组或已有consumer崩溃了——这两者的区别后面会谈到)
+>- 订阅主题数发生变更——这当然是可能的，如果你使用了正则表达式的方式进行订阅，那么新建匹配正则表达式的topic就会触发rebalance
+>- 订阅主题的分区数发生变更
+>
+>**4.4 谁来执行rebalance和consumer group管理？**
+>
+>Kafka提供了一个角色：coordinator来执行对于consumer group的管理。坦率说kafka对于coordinator的设计与修改是一个很长的故事。最新版本的coordinator也与最初的设计有了很大的不同。这里我只想提及两次比较大的改变。
+>
+>首先是0.8版本的coordinator，那时候的coordinator是依赖zookeeper来实现对于consumer group的管理的。Coordinator监听zookeeper的/consumers/<group>/ids的子节点变化以及/brokers/topics/<topic>数据变化来判断是否需要进行rebalance。group下的每个consumer都自己决定要消费哪些分区，并把自己的决定抢先在zookeeper中的/consumers/<group>/owners/<topic>/<partition>下注册。很明显，这种方案要依赖于zookeeper的帮助，而且每个consumer是单独做决定的，没有那种“大家属于一个组，要协商做事情”的精神。
+>
+>基于这些潜在的弊端，0.9版本的kafka改进了coordinator的设计，提出了group coordinator——每个consumer group都会被分配一个这样的coordinator用于组管理和位移管理。这个group coordinator比原来承担了更多的责任，比如组成员管理、位移提交保护机制等。当新版本consumer group的第一个consumer启动的时候，它会去和kafka server确定谁是它们组的coordinator。之后该group内的所有成员都会和该coordinator进行协调通信。显而易见，这种coordinator设计不再需要zookeeper了，性能上可以得到很大的提升。后面的所有部分我们都将讨论最新版本的coordinator设计。
+>
+>**4.5 如何确定coordinator？**
+>
+>上面简单讨论了新版coordinator的设计，那么consumer group如何确定自己的coordinator是谁呢？ 简单来说分为两步：
+>
+>- **确定consumer group位移信息写入__consumers_offsets的哪个分区 **。具体计算公式：
+> - **__consumers_offsets partition# = Math.abs(groupId.hashCode() % groupMetadataTopicPartitionCount)  注意：groupMetadataTopicPartitionCount由offsets.topic.num.partitions指定，默认是50个分区。**
+>- **该分区leader所在的broker就是被选定的coordinator **
+>
+>**4.9 Rebalance过程**
+>
+>终于说到consumer group执行rebalance的具体流程了。很多用户估计对consumer内部的工作机制也很感兴趣。下面就跟大家一起讨论一下。当然我必须要明确表示，rebalance的前提是coordinator已经确定了。
+>
+>总体而言，rebalance分为2步：Join和Sync
+>
+>1 Join， 顾名思义就是加入组。这一步中，所有成员都向coordinator发送JoinGroup请求，请求入组。一旦所有成员都发送了JoinGroup请求，coordinator会从中选择一个consumer担任leader的角色，并把组成员信息以及订阅信息发给leader——**注意leader和coordinator不是一个概念。leader负责消费分配方案的制定。**
+>
+>2 Sync，这一步leader开始分配消费方案，即哪个consumer负责消费哪些topic的哪些partition。一旦完成分配，leader会将这个方案封装进SyncGroup请求中发给coordinator，非leader也会发SyncGroup请求，只是内容为空。coordinator接收到分配方案之后会把方案塞进SyncGroup的response中发给各个consumer。这样组内的所有成员就都知道自己应该消费哪些分区了。
+>
+>还是拿几张图来说明吧，首先是加入组的过程:
+>
+>![image-20200617213709848](../../../../allen/Library/Application Support/typora-user-images/image-20200617213709848.png)
+>
+>值得注意的是， 在coordinator收集到所有成员请求前，它会把已收到请求放入一个叫purgatory(炼狱)的地方。记得国内有篇文章以此来证明kafka开发人员都是很有文艺范的，写得也是比较有趣，有兴趣可以去搜搜。
+>然后是分发分配方案的过程，即SyncGroup请求：
+>
+>![image-20200617213803830](../../../../allen/Library/Application Support/typora-user-images/image-20200617213803830.png)
+>
+>**注意！！ consumer group的分区分配方案是在客户端执行的！**Kafka将这个权利下放给客户端主要是因为这样做可以有更好的灵活性。比如这种机制下我可以实现类似于Hadoop那样的机架感知(rack-aware)分配方案，即为consumer挑选同一个机架下的分区数据，减少网络传输的开销。Kafka默认为你提供了两种分配策略：range和round-robin。由于这不是本文的重点，这里就不再详细展开了，你只需要记住你可以覆盖consumer的参数：partition.assignment.strategy来实现自己分配策略就好了。
+
+
+
+## [详解Kafka中的分区分配](https://juejin.im/post/5d1df788f265da1b8811fa7b)      讲得很笼统
+
+>当遇到“分区分配”这个字眼的时候，一定要记住有三处地方，分别是生产者发送消息、消费者消费消息和创建主题。虽然这三处的对应操作都可以被称之为“分区分配”，但是其实质上所包含的内容却并不相同。
+>
+>生产者的分区分配是指为每条消息指定其所要发往的分区，消费者中的分区分配是指为消费者指定其可以消费消息的分区，而这里的分区分配是指为集群制定创建主题时的分区副本分配方案，即在哪个broker中创建哪些分区的副本。分区分配是否均衡会影响到Kafka整体的负载均衡，具体还会牵涉到优先副本等概念。
+
+## sgg大数据技术之kafka.pdf 学习笔记
+
+>**生产者分区的原则**
+>我们需要将 producer 发送的数据封装成一个 ProducerRecord 对象。
+>
+>(1)指明 partition 的情况下，直接将指明的值直接作为 partiton 值;
+>
+>(2)没有指明 partition 值但有 key 的情况下，将 key 的 hash 值与 topic 的 partition 数进行取余得到 partition 值;
+>
+>(3)既没有 partition 值又没有 key 值的情况下，第一次调用时随机生成一个整数(后 面每次调用在这个整数上自增)，将这个值与 topic 可用的 partition 总数取余得到 partition 值，也就是常说的 round-robin 算法。
+>
+>**消费者分区的原则**
+>
+>一个 consumer group 中有多个 consumer，一个 topic 有多个 partition，所以必然会涉及 到 partition 的分配问题，即确定那个 partition 由哪个 consumer 来消费。
+>
+>Kafka 有两种分配策略，一是 RoundRobin，一是 Range。
+>
+>3.4 Kafka 高效读写数据
+>
+>1)顺序写磁盘
+>
+>Kafka 的 producer 生产数据，要写入到 log 文件中，写的过程是一直追加到文件末端， 为顺序写。官网有数据表明，同样的磁盘，顺序写能到 600M/s，而随机写只有 100K/s。这
+>
+>与磁盘的机械机构有关，顺序写之所以快，是因为其省去了大量磁头寻址的时间。
+>
+>2)零复制技术
+>
+>![image-20200618120809632](../../../../allen/Library/Application Support/typora-user-images/image-20200618120809632.png)
+>
+>
+
+
+
+## [深入分析Kafka架构（三）：消费者消费方式、三种分区分配策略、offset维护](https://my.oschina.net/u/4262150/blog/3274346)
+
+>当然让消费者去pull数据自然也是有缺点的。kafka也是这样，采用pull模式后，如果kafka没有数据，消费者可能会陷入循环中，一直返回空数据。为了解决这个问题，Kafka消费者在消费数据时会传入一个时长参数timeout，如果当前没有数据可供消费，消费者会等待一段时间之后再返回，这段时长即为timeout。
+>
+>**kafka提供了消费者客户端参数partition.assignment.strategy用来设置消费者与订阅主题之间的分区分配策略。默认情况下，此参数的值为：org.apache.kafka.clients.consumer.RangeAssignor，即采用range分配策略。除此之外，Kafka中还提供了roundrobin分配策略和sticky分区分配策略。消费者客户端参数partition.asssignment.strategy可以配置多个分配策略，把它们以逗号分隔就可以了。**
+>
+>##### 3.2、Range分配策略
+>
+>Range分配策略是**面向每个主题**的，首先会对同一个主题里面的分区按照序号进行排序，并把消费者线程按照字母顺序进行排序。然后**用分区数除以消费者线程数量来判断每个消费者线程消费几个分区。如果除不尽，那么前面几个消费者线程将会多消费一个分区**。
+>
+>缺点：
+>
+>一般在咱们实际生产环境下，会有多个主题，我们假设有3个主题（T1，T2，T3），都有7个分区，那么按照咱们上面这种Range分配策略分配后的消费结果如下：
+>
+>| 消费者线程 | 对应消费的分区序号t                         |
+>| ---------- | ------------------------------------------- |
+>| C0-0       | T1（0，1，2），T2（0，1，2），T3（0，1，2） |
+>| C1-0       | T1（3，4），T2（3，4），T3（3，4）          |
+>| C1-1       | T1（5，6），T2（5，6），T3（5，6）          |
+>
+>**我们可以发现，在这种情况下，C0-0消费线程要多消费3个分区，这显然是不合理的，其实这就是Range分区分配策略的缺点。**
+>
+>##### 3.3、RoundRobin分配策略
+>
+>RoundRobin策略的原理是将消费组内所有消费者以及消费者所订阅的所有topic的partition按照字典序排序，然后通过轮询算法逐个将分区以此分配给每个消费者。
+>
+>使用RoundRobin分配策略时会出现两种情况：
+>
+>1. 如果同一消费组内，所有的消费者订阅的消息都是相同的，那么 RoundRobin 策略的分区分配会是均匀的。
+>2. 如果同一消费者组内，所订阅的消息是不相同的，那么在执行分区分配的时候，就不是完全的轮询分配，有可能会导致分区分配的不均匀。如果某个消费者没有订阅消费组内的某个 topic，那么在分配分区的时候，此消费者将不会分配到这个 topic 的任何分区。
+>
+>因此在使用RoundRobin分配策略时，为了保证得均匀的分区分配结果，需要满足两个条件：
+>
+>1. 同一个消费者组里的每个消费者订阅的主题必须相同；
+>2. 同一个消费者组里面的所有消费者的num.streams必须相等。
+>
+>如果无法满足，那最好不要使用RoundRobin分配策略。
+>
+>##### 3.4、Sticky分配策略
+>
+>最后介绍一下**Sticky分配策略，这种分配策略是在kafka的0.11.X版本才开始引入的，是目前最复杂也是最优秀的分配策略。**
+>
+>Sticky分配策略的原理比较复杂，它的设计主要实现了两个目的：
+>
+>1. 分区的分配要尽可能的均匀；
+>2. 分区的分配尽可能的与上次分配的保持相同。
+>
+>如果这两个目的发生了冲突，优先实现第一个目的。
+>
+>我们举例进行分析：比如我们有3个消费者（C0，C1，C2），都订阅了2个主题（T0 和 T1）并且每个主题都有 3 个分区(p0、p1、p2)，那么所订阅的所有分区可以标识为T0p0、T0p1、T0p2、T1p0、T1p1、T1p2。此时使用Sticky分配策略后，得到的分区分配结果如下：
+>
+>| 消费者线程 | 对应消费的分区序号 |
+>| ---------- | ------------------ |
+>| C0         | T0p0、T1p0         |
+>| C1         | T0p1、T1p1         |
+>| C2         | T0p2、T1p2         |
+>
+>哈哈，这里可能会惊呼，怎么和前面RoundRobin分配策略一样，其实底层实现并不一样。这里假设C2故障退出了消费者组，然后需要对分区进行再平衡操作，如果使用的是RoundRobin分配策略，它会按照消费者C0和C1进行重新轮询分配，再平衡后的结果如下：
+>
+>| 消费者线程 | 对应消费的分区序号 |
+>| ---------- | ------------------ |
+>| C0         | T0p0、T0p2、T1p1   |
+>| C1         | T0p1、T1p0、T1p2   |
+>
+>但是如果使用的是Sticky分配策略，再平衡后的结果会是这样：
+>
+>| 消费者线程 | 对应消费的分区序号 |
+>| ---------- | ------------------ |
+>| C0         | T0p0、T1p0、T0p2   |
+>| C1         | T0p1、T1p1、T1p2   |
+>
+>看出区别了吗？Stiky分配策略保留了再平衡之前的消费分配结果，并将原来消费者C2的分配结果分配给了剩余的两个消费者C0和C1，最终C0和C1的分配还保持了均衡。这时候再体会一下sticky（翻译为：粘粘的）这个词汇的意思，是不是豁然开朗了。
+
+kafka 问题？
+
+kafka consumer 端的分区策略需要再深入研究？
+
+kafka brocker 端的分配策略？
+
+partition leader 的选取过程？
+
+
+
 # 文章
 
 ## [使用kafka-clients api操作Kafka](https://blog.csdn.net/LanSeTianKong12/article/details/54946592)
@@ -965,13 +1190,13 @@ bash ./bin/kafka-server-start.sh config/server.properties &
 >
 >Producer 生产的数据持久化到 broker，采用 mmap 文件映射，实现顺序的快速写入.
 >
->![image-20210307122620517](/Users/allen/big_data_learning/kafka/kafka学习笔记.assets/image-20210307122620517.png)
+>![image-20210307122620517](./kafka学习笔记.assets/image-20210307122620517.png)
 >
 >4.2 磁盘文件通过网络发送（Broker 到 Consumer)
 >
 >Customer 从 broker 读取数据，采用 sendfile，将磁盘文件读到 OS 内核缓冲区后，转到 NIO buffer进行网络发送，减少 CPU 消耗
 >
->![image-20210307122703224](/Users/allen/big_data_learning/kafka/kafka学习笔记.assets/image-20210307122703224.png)
+>![image-20210307122703224](./kafka学习笔记.assets/image-20210307122703224.png)
 >
 >* 批处理
 >
