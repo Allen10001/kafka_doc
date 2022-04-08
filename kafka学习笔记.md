@@ -349,7 +349,7 @@ org.apache.kafka.clients.producer.KafkaProducer#sendOffsetsToTransaction(java.ut
 
 #### [Kafka的复制机制](https://colobu.com/2017/11/02/kafka-replication/)
 
->Kafka引入了 **ISR** 的概念。ISR是`in-sync replicas`的简写。ISR的副本保持和leader的同步，当然leader本身也在ISR中。初始状态所有的副本都处于ISR中，当一个消息发送给leader的时候，leader会等待ISR中所有的副本告诉它已经接收了这个消息，如果一个副本失败了，那么它会被移除ISR。下一条消息来的时候，leader就会将消息发送给当前的ISR中节点了。
+>Kafka引入了 **ISR** 的概念。ISR是`in-sync replicas`的简写。ISR的副本保持和leader的同步，当然leader本身也在ISR中。初始状态所有的副本都处于ISR中，当一个消息发送给leader的时候，leader会等待ISR中所有的副本告诉它已经接收了这个消息，如果一个副本失败了，那么它会被移除 ISR。下一条消息来的时候，leader就会将消息发送给当前的ISR中节点了。
 >
 >同时，**leader还维护这HW(high watermark),这是一个分区的最后一条消息的offset。leader会持续的将HW发送给slave，broker可以将它写入到磁盘中以便将来恢复。**
 >
