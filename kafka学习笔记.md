@@ -138,26 +138,26 @@
 >
 >幂等性是通过两个关键信息保证的，PID(Producer ID)和sequence numbers。
 >
->- PID 用来标识每个producer client
->- sequence numbers 客户端发送的每条消息都会带相应的 sequence number，Server 端就是根据这个值来判断数据是否重复
+>- **PID 用来标识每个producer client**
+>- **sequence numbers 客户端发送的每条消息都会带相应的 sequence number，Server 端就是根据这个值来判断数据是否重复**
 >
->producer初始化会由server端生成一个PID,然后发送每条信息都包含该PID和sequence number，在server端，是按照partition同样存放一个sequence numbers 信息，通过判断客户端发送过来的sequence number与server端number+1差值来决定数据是否重复或者漏掉。
+>**producer 初始化会由server端生成一个PID, 然后发送每条信息都包含该PID和sequence number**，在server端，是按照partition 同样存放一个 sequence numbers 信息，通过判断客户端发送过来的sequence number与server端number+1差值来决定数据是否重复或者漏掉。
 >
->通常情况下为了保证数据顺序性，我们可以通过`max.in.flight.requests.per.connection=1`来保证，这个也只是针对单实例。在kafka2.0+版本上，只要开启幂等性，不用设置这个参数也能保证发送数据的顺序性。
+>通常情况下为了保证数据顺序性，我们可以通过 `max.in.flight.requests.per.connection=1`来保证，这个也只是针对单实例。在kafka2.0+版本上，**只要开启幂等性，不用设置这个参数也能保证发送数据的顺序性。**
 >
 >### 事务实现原理
 >
 >###### (1)查找TransactionCoordinator
 >
->通过 transaction_id 找到TransactionCoordinator，具体算法是`Utils.abs(transaction_id.hashCode %transactionTopicPartitionCount )`，获取到partition，再找到该partition的leader,即为TransactionCoordinator。
+>通过 transaction_id 找到 TransactionCoordinator，具体算法是`Utils.abs(transaction_id.hashCode %transactionTopicPartitionCount )`，获取到 partition，再找到该 partition的leader,即为 TransactionCoordinator。
 >
 >###### (2)获取PID
 >
->凡是开启幂等性都是需要生成PID(Producer ID),只不过未开启事务的PID可以在任意broker生成，而开启事务只能在TransactionCoordinator节点生成。这里只讲开启事务的情况，Producer Client的`initTransactions()`方法会向TransactionCoordinator发起InitPidRequest ，这样就能获取PID。这里面还有一些细节问题，这里不探讨，例如transaction_id 之前的事务状态什么的。但需要说明的一点是这里**会将 transaction_id 与相应的 TransactionMetadata 持久化到事务日志**（_transaction_state）中。
+>凡是开启幂等性都是需要生成PID(Producer ID), 只不过未开启事务的PID可以在任意broker生成，而**开启事务只能在TransactionCoordinator节点生成。**这里只讲开启事务的情况，Producer Client的`initTransactions()`方法会向TransactionCoordinator发起InitPidRequest ，这样就能获取PID。这里面还有一些细节问题，这里不探讨，例如transaction_id 之前的事务状态什么的。但需要说明的一点是这里**会将 transaction_id 与相应的 TransactionMetadata 持久化到事务日志**（_transaction_state）中。
 >
 >###### (3)开启事务
 >
->Producer调用`beginTransaction`开始一个事务状态，这里只是在客户端将本地事务状态转移成 IN_TRANSACTION，只有在发送第一条信息后，TransactionCoordinator才会认为该事务已经开启。
+>Producer调用`beginTransaction`开始一个事务状态，这里只是在客户端将本地事务状态转移成 IN_TRANSACTION，只有在发送第一条信息后，TransactionCoordinator 才会认为该事务已经开启。
 
 ---------
 
@@ -167,7 +167,7 @@
 
 ###  3.1 幂等性发送
 
-上文提到，实现`Exactly Once`的一种方法是让下游系统具有幂等处理特性，而在Kafka Stream中，Kafka Producer本身就是“下游”系统，因此如果能让Producer具有幂等处理特性，那就可以让Kafka Stream在一定程度上支持`Exactly once`语义。
+上文提到，实现`Exactly Once`的一种方法是让下游系统具有幂等处理特性，而在 Kafka Stream 中，Kafka Producer 本身就是“下游”系统，因此如果能让Producer具有幂等处理特性，那就可以让Kafka Stream在一定程度上支持`Exactly once`语义。
 
 为了实现Producer的幂等语义，Kafka引入了`Producer ID`（即`PID`）和`Sequence Number`。每个新的Producer在初始化的时候会被分配一个唯一的PID，该PID对用户完全透明而不会暴露给用户。
 
@@ -912,7 +912,7 @@ https://blog.csdn.net/yjh314/article/details/78855193
 >
 >(2)没有指明 partition 值但有 key 的情况下，将 key 的 hash 值与 topic 的 partition 数进行取余得到 partition 值;
 >
->(3)既没有 partition 值又没有 key 值的情况下，第一次调用时随机生成一个整数(后 面每次调用在这个整数上自增)，将这个值与 topic 可用的 partition 总数取余得到 partition 值，也就是常说的 round-robin 算法。
+>**(3)既没有 partition 值又没有 key 值的情况下，第一次调用时随机生成一个整数(后 面每次调用在这个整数上自增)，将这个值与 topic 可用的 partition 总数取余得到 partition 值，也就是常说的 round-robin 算法**。
 >
 >**消费者分区的原则**
 >
