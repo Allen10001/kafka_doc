@@ -138,7 +138,7 @@
 >
 >幂等性是通过两个关键信息保证的，PID(Producer ID)和sequence numbers。
 >
->- **PID 用来标识每个producer client**
+>- **PID 用来标识每个 producer client**
 >- **sequence numbers 客户端发送的每条消息都会带相应的 sequence number，Server 端就是根据这个值来判断数据是否重复**
 >
 >**producer 初始化会由server端生成一个PID, 然后发送每条信息都包含该PID和sequence number**，在server端，是按照partition 同样存放一个 sequence numbers 信息，通过判断客户端发送过来的sequence number与server端number+1差值来决定数据是否重复或者漏掉。
