@@ -312,10 +312,10 @@ org.apache.kafka.clients.producer.KafkaProducer#sendOffsetsToTransaction(java.ut
 >kafka源码ProducerRecord.java类的注释说明了key的作用，注释如下：
 >
 >A key/value pair to be sent to Kafka. This consists of a topic name to which the record is being sent, an optional partition number, and an optional key and value.
-> 一个k/v对被发送到kafka。这包含被发送记录的主题名字，一个可选的分区编号，一个可选的key和value。
+> **一个k/v对被发送到kafka。**这包含被发送记录的主题名字，一个可选的分区编号，一个可选的key和value。
 >
 >If a valid partition number is specified that partition will be used when sending the record. If no partition is specified but a key is present a partition will be chosen using a hash of the key. If neither key nor partition is present a partition will be assigned in a round-robin fashion.
-> 如果一个有效的partition属性数值被指定，那么在发送记录时partition属性数值就会被应用。如果没有partition属性数值被指定，而一个key属性被声明的话，一个partition会通过key的hash而被选中。如果既没有key也没有partition属性数值被声明，那么一个partition将会被分配以轮询的方式。
+> 如果一个有效的partition属性数值被指定，那么在发送记录时partition属性数值就会被应用。如果没有partition属性数值被指定，**而一个key属性被声明的话，一个partition会通过key的hash而被选中。如果既没有key也没有partition属性数值被声明，那么一个partition将会被分配以轮询的方式。**
 >
 >The record also has an associated timestamp. If the user did not provide a timestamp, the producer will stamp the record with its current time. The timestamp eventually used by Kafka depends on the timestamp type configured for the topic.
 > record也有一个关联的时间戳。如果用户未提供一个时间戳，producer 将会通过当前的时间标记此record。时间戳最终会被kafka应用，其依赖时间戳类型来配置主题。
@@ -549,9 +549,9 @@ https://www.orchome.com/451
 
 * [Kafka消费组(consumer group)](https://www.cnblogs.com/huxi2b/p/6223228.html)  
 
-该文章对kafka 的消费者部分内容讲得很清晰、通俗易懂。
+该文章对 kafka 的消费者部分内容讲得很清晰、通俗易懂。
 
->很多人在Kafka中国社区(替群主做个宣传，QQ号：162272557)提问时的开头经常是这样的：“我使用的kafka版本是2.10/2.11, 现在碰到一个奇怪的问题。。。。” 无意冒犯，但这里的2.10/2.11不是kafka的版本，而是编译kafka的Scala版本。Kafka的server端代码是由Scala语言编写的，目前Scala主流的3个版本分别是2.10、2.11和2.12。实际上Kafka现在每个PULL request都已经自动增加了这三个版本的检查。目前广泛使用kafka的版本应该是这三个大版本：0.8.x， 0.9.x和0.10.x(**2020年8月已经更新到2.6.0了**)。 这三个版本对于consumer和consumer group来说都有很大的变化，我们后面会详谈。
+>很多人在Kafka中国社区提问时的开头经常是这样的：“我使用的kafka版本是2.10/2.11, 现在碰到一个奇怪的问题。。。。” 无意冒犯，但这里的2.10/2.11不是kafka的版本，而是编译kafka的Scala版本。Kafka的server端代码是由Scala语言编写的，目前Scala主流的3个版本分别是2.10、2.11和2.12。实际上Kafka现在每个PULL request都已经自动增加了这三个版本的检查。目前广泛使用kafka的版本应该是这三个大版本：0.8.x， 0.9.x和0.10.x(**2020年8月已经更新到2.6.0了**)。 这三个版本对于consumer和consumer group来说都有很大的变化，我们后面会详谈。
 >
 >**4.1 什么是rebalance？**
 >
@@ -754,7 +754,7 @@ https://gist.github.com/jonathansantilli/3b69ebbcd24e7a30f66db790ef648f99
 
 ##  [kafka中的 zookeeper 起到什么作用，可以不用zookeeper么？](https://www.cnblogs.com/programb/p/12906750.html)
 
->zookeeper 是一个分布式的协调组件，早期版本的kafka用zk做meta信息存储，consumer的消费状态，group的管理以及 offset的值。考虑到zk本身的一些因素以及整个架构较大概率存在单点问题，新版本中逐渐弱化了zookeeper的作用。新的consumer使用了kafka内部的group coordination协议，也减少了对zookeeper的依赖，
+>zookeeper 是一个分布式的协调组件，早期版本的kafka用zk做meta信息存储，consumer的消费状态，group的管理以及 offset的值。考虑到zk本身的一些因素以及整个架构较大概率存在单点问题，新版本中逐渐弱化了zookeeper的作用。**新的consumer使用了kafka内部的group coordination协议，也减少了对zookeeper的依赖，**
 >
 >**但是broker依然依赖于ZK，zookeeper 在kafka中还用来选举分区的 leader 和 检测broker是否存活等等。**
 
@@ -802,7 +802,7 @@ https://blog.csdn.net/yjh314/article/details/78855193
 
 * [Kafka: 用于日志处理的分布式消息系统](https://zhuanlan.zhihu.com/p/97704127)
 
->为了避免日志损坏，Kafka将每个消息的CRC存储在日志中。如果代理上存在任何I / O错误，Kafka将运行恢复过程以删除带有不一致CRC的消息。在消息级别使用CRC还可以使我们在产生或使用消息之后检查网络错误。
+>为了避免日志损坏，Kafka 将每个消息的CRC存储在日志中。如果代理上存在任何I / O错误，Kafka将运行恢复过程以删除带有不一致CRC的消息。在消息级别使用CRC还可以使我们在产生或使用消息之后检查网络错误。
 >
 >Kafka保证将来自单个分区的消息按顺序传递给消费者。但是，不能保证来自不同分区的消息的顺序。
 
@@ -810,7 +810,7 @@ https://blog.csdn.net/yjh314/article/details/78855193
 
 >为了对某个具体Topic的读写的负载均衡，Kafka的一个Topic可以分为多个Partition，不同的Partition可以分布在不同的broker，方便的实现水平拓展，减轻读写瓶颈。通过前面几篇博文的分析我们知道正常情况下Kafka保证一条消息只发送到一个分区，并且一个分区的一条消息只能由Group下的唯一一个Consumer消费，如果想重复消费则可以加入一个新的组。
 >
->熟悉Kafka的同学都知道，Kafka的消息的读写都是存放在log文件中。一个broker的log文件放在一个目录下，而不同的Partition对应一个子目录，发送到broker上的消息将会顺序的append到对应的Partition对应的log文件中。每个Partition对应的log文件可以看成是无限长、可以在文件末尾进行append数据的文件，加速写入速度。实际实现中，每个Partition对应的日志文件又被切分成多个Segment，这种切分的设计可以在数据的清理，控制索引文件大小等方面带来优势。
+>熟悉Kafka的同学都知道，Kafka的消息的读写都是存放在log文件中。一个broker的log文件放在一个目录下，而不同的Partition对应一个子目录，发送到broker上的消息将会顺序的append到对应的Partition对应的log文件中。每个Partition对应的log文件可以看成是无限长、可以在文件末尾进行append数据的文件，加速写入速度。实际实现中，**每个Partition对应的日志文件又被切分成多个Segment，这种切分的设计可以在数据的清理，控制索引文件大小等方面带来优势。**
 >
 >　　因为分布式环境下的任何一个Broker都有宕机的风险，所以Kafka上每个Partition有可以设置多个副本，通过副本的主从选举，副本的主从同步等手段，保证数据的高可用，降低由于部分broker宕机带来的影响，当然为了达到这个目的，同一个Partition副本应该分布在不同的Broker、机架上，通过一定的分配算法来使得分布尽量分散。
 >
@@ -830,7 +830,7 @@ https://blog.csdn.net/yjh314/article/details/78855193
 >00000000000000090023.log
 >```
 >
->每个Segment都对应着base_offset.index,base_offset.log文件。这个base_offset代表这个Segment消息在整个消息中的基准偏移量，他会小于等于这个Segment中所有的消息的偏移，也严格大于前一个Segment中所有消息的偏移量。
+>**每个Segment都对应着base_offset.index,base_offset.log文件。这个base_offset代表这个Segment消息在整个消息中的基准偏移量，他会小于等于这个Segment中所有的消息的偏移，也严格大于前一个Segment中所有消息的偏移量。**
 >
 >　　因为Kafka对数据的处理是抽象为在一个无限长的日志文件后进行追加操作。因此为了能迅速检索到某个指定offset对应的消息，Kafka对日志文件都进行了索引。每个日志的Segment相应地对应一个索引文件OffsetIndex。下面来看索引及消息在某个具体Segment的示意结构图:
 >
@@ -854,9 +854,9 @@ https://blog.csdn.net/yjh314/article/details/78855193
 >
 >这也是经常被提及的一个问题。rebalance的触发条件有三种：
 >
->- 组成员发生变更(新consumer加入组、已有consumer主动离开组或已有consumer崩溃了——这两者的区别后面会谈到)
->- 订阅主题数发生变更——这当然是可能的，如果你使用了正则表达式的方式进行订阅，那么新建匹配正则表达式的topic就会触发rebalance
->- 订阅主题的分区数发生变更
+>- **组成员发生变更(新consumer加入组、已有consumer主动离开组或已有consumer崩溃了——这两者的区别后面会谈到)**
+>- **订阅主题数发生变更——这当然是可能的，如果你使用了正则表达式的方式进行订阅，那么新建匹配正则表达式的topic就会触发rebalance**
+>- **订阅主题的分区数发生变更**
 >
 >**4.4 谁来执行rebalance和consumer group管理？**
 >
@@ -1169,17 +1169,17 @@ partition leader 的选取过程？
 
 >### **下次面试官问我 kafka 为什么快，我就这么说**
 >
->- partition 并行处理
->- 顺序写磁盘，充分利用磁盘特性
+>- **partition 并行处理**
+>- **顺序写磁盘，充分利用磁盘特性**
 >
 >**Kafka 中每个分区是一个有序的，不可变的消息序列**，新的消息不断追加到 partition 的末尾，这个就是顺序写。
 >
->- 利用了现代操作系统分页存储 Page Cache 来利用内存提高 I/O 效率
+>- **利用了现代操作系统分页存储 Page Cache 来利用内存提高 I/O 效率**
 >
 >引入 Cache 层的目的是为了提高 Linux 操作系统对磁盘访问的性能。Cache 层在内存中缓存了磁盘上的部分数据。当数据的请求到达时，如果在 Cache 中存在该数据且是最新的，则直接将数据传递给用户程序，免除了对底层磁盘的操作，提高了性能。Cache 层也正是磁盘 IOPS 为什么能突破 200 的主要原因之一。
->在 Linux 的实现中，文件 Cache 分为两个层面，一是 Page Cache，另一个 Buffer Cache，**每一个 Page Cache 包含若干 Buffer Cache**。Page Cache 主要用来作为文件系统上的文件数据的缓存来用，尤其是针对当进程对文件有 read/write 操作的时候。Buffer Cache 则主要是设计用来在系统对块设备进行读写的时候，对块进行数据缓存的系统来使用。
+>在 Linux 的实现中，文件 Cache 分为两个层面，一是 Page Cache，另一个 Buffer Cache，**每一个 Page Cache 包含若干 Buffer Cache**。**Page Cache 主要用来作为文件系统上的文件数据的缓存来用，尤其是针对当进程对文件有 read/write 操作的时候。Buffer Cache 则主要是设计用来在系统对块设备进行读写的时候，对块进行数据缓存的系统来使用。**
 >
->- 采用了零拷贝技术
+>- **采用了零拷贝技术**
 >
 >Kafka 中存在大量的网络数据持久化到磁盘（Producer 到 Broker）和磁盘文件通过网络发送（Broker 到 Consumer）的过程。这一过程的性能直接影响 Kafka 的整体吞吐量。
 >
@@ -1188,23 +1188,23 @@ partition leader 的选取过程？
 >
 >4.1 网络数据持久化到磁盘 (Producer 到 Broker)
 >
->Producer 生产的数据持久化到 broker，采用 mmap 文件映射，实现顺序的快速写入.
+>Producer 生产的数据持久化到 broker，采用 mmap 文件映射，**实现顺序的快速写入.**
 >
 >![image-20210307122620517](./kafka学习笔记.assets/image-20210307122620517.png)
 >
->4.2 磁盘文件通过网络发送（Broker 到 Consumer)
+>4.2 **磁盘文件通过网络发送（Broker 到 Consumer)**
 >
->Customer 从 broker 读取数据，采用 sendfile，将磁盘文件读到 OS 内核缓冲区后，转到 NIO buffer进行网络发送，减少 CPU 消耗
+>**Customer 从 broker 读取数据，采用 sendfile，将磁盘文件读到 OS 内核缓冲区后，转到 NIO buffer进行网络发送，减少 CPU 消耗**
 >
 >![image-20210307122703224](./kafka学习笔记.assets/image-20210307122703224.png)
 >
->* 批处理
+>* **批处理**
 >
 >在很多情况下，系统的瓶颈不是 CPU 或磁盘，而是网络IO。
 >
->因此，除了操作系统提供的低级批处理之外，Kafka 的客户端和 broker 还会在通过网络发送数据之前，在一个批处理中累积多条记录 (包括读和写)。记录的批处理分摊了网络往返的开销，使用了更大的数据包从而提高了带宽利用率。
+>因此，除了操作系统提供的低级批处理之外，**Kafka 的客户端和 broker 还会在通过网络发送数据之前，在一个批处理中累积多条记录 (包括读和写)。**记录的批处理分摊了网络往返的开销，使用了更大的数据包从而提高了带宽利用率。
 >
->* 数据压缩
+>* **数据压缩**
 >
 >Producer 可将数据压缩后发送给 broker，从而减少网络传输代价，目前支持的压缩算法有：Snappy、Gzip、LZ4。数据压缩一般都是和批处理配套使用来作为优化手段的。
 
